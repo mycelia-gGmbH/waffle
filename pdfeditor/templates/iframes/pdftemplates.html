@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-beasties-container>
+    <head>
+        <meta charset="utf-8" />
+        <title>Open Educational Badges PDF Vorlagen editieren</title>
+        <link rel="stylesheet"
+              href="{{ asset_path }}oeb-pdftemplate-edit-form/styles.css"
+              media="print"
+              onload="this.media='all'" />
+        <noscript>
+            <link rel="stylesheet"
+                  href="{{ asset_path }}oeb-pdftemplate-edit-form/styles.css" />
+        </noscript>
+        <script>
+            window.OEBWebComponentSettings = {
+                language: "{{ language }}",
+            };
+        </script>
+    </head>
+    <body>
+        <oeb-badgeclass-edit-form id="edit-form" token="{{ token }}" baseurl="{{ asset_path }}oeb-pdftemplate-edit-form/" />
+        <script src="{{ asset_path }}oeb-pdftemplate-edit-form/polyfills.js"
+                type="module"></script>
+        <script src="{{ asset_path }}oeb-pdftemplate-edit-form/main.js" type="module"></script>
+        <script type="text/javascript">
+            document.addEventListener("DOMContentLoaded", () => {
+                const issuer = JSON.parse("{{ issuer | escapejs }}");
+                const editForm = document.getElementById("edit-form");
+
+                editForm.addEventListener("finished", (ev) => {
+                    try {
+                        window.parent.postMessage({
+                            type: "FinishedEvent",
+                            payload: ev.detail,
+                        });
+                    } catch (err) {
+                        console.log(err);
+                    }
+                });
+
+                editForm.config = {
+                    issuer: issuer
+                };
+            });
+        </script>
+    </body>
+</html>
