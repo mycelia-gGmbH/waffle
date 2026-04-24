@@ -255,7 +255,7 @@ class PDFEditorQrCodeSerializerV1(QrCodeSerializerV1):
         try:
             qrcode = QrCode.objects.get(entity_id=data['slug'])
             pdftemplate = PDFEditorQrCode.objects.get(qrcode=qrcode).pdftemplate.entity_id
-        except ObjectDoesNotExist:
+        except (ObjectDoesNotExist, AttributeError):
             pass
 
         data['pdftemplate'] = pdftemplate

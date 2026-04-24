@@ -59,7 +59,7 @@ def iframe(request, *args, **kwargs):
     iframe_uuid = kwargs.get("iframe_uuid")
     try:
         iframe = PDFEditorIframeUrl.objects.get(id=iframe_uuid)
-        # iframe.delete()
+        iframe.delete()
     except PDFEditorIframeUrl.DoesNotExist:
         return HttpResponseNotFound()
 

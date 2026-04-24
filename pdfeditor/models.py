@@ -78,8 +78,13 @@ class PDFTemplate(
 
     @property
     def is_used(self):
-        if PDFEditorBadgeInstance.objects.filter(pdftemplate=self).count() > 0 or PDFEditorQrCode.objects.filter(pdftemplate=self).count() > 0:
+        if  PDFEditorQrCode.objects.filter(pdftemplate=self).count() > 0:
             return True
+
+        for obj in PDFEditorBadgeInstance.objects.filter(pdftemplate=self):
+            if not obj.badgeinstance.revoked:
+                return True
+
         return False
 
 
