@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from django.urls import re_path
 
 
 class PDFEditorConfig(AppConfig):
@@ -12,7 +13,6 @@ class PDFEditorConfig(AppConfig):
         from .views import pdfeditor_backpack_pdf
 
         BadgrAccountAdapter.generate_pdf_content = pdfeditor_generate_pdf_content
-        views.pdf = pdfeditor_backpack_pdf
 
         # override original use of BadgeInstanceSerializerV1
         from issuer.api import (
@@ -49,5 +49,7 @@ class PDFEditorConfig(AppConfig):
         # add application urls
         from mainsite.urls import urlpatterns
         from .urls import urlpatterns as pdfeditor_urls
+
+        urlpatterns.insert(0, re_path(r"^v1/earner/badges/pdf/(?P<slug>[^/]+)$", pdfeditor_backpack_pdf, name="generate-pdf"))
 
         urlpatterns += pdfeditor_urls
