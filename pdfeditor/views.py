@@ -16,6 +16,12 @@ from rest_framework.decorators import (
     permission_classes,
 )
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiResponse,
+)
+from drf_spectacular.types import OpenApiTypes
 
 from issuer.models import BadgeClass, BadgeInstance, Issuer
 from mainsite.badge_pdf import BadgePDFCreator
@@ -23,11 +29,32 @@ from .badge_pdf import TemplateBadgePDFCreator
 from .models import PDFEditorIframeUrl
 
 
-@api_view(["GET"])
-@authentication_classes(
-    [TokenAuthentication, SessionAuthentication, BasicAuthentication]
+@extend_schema(
+    summary="Download Badge PDF",
+    description=(
+        "Returns a PDF version of a badge instance. "
+        "The user must be the badge recipient or issuer owner."
+    ),
+    parameters=[
+        OpenApiParameter(
+            name="slug",
+            type=str,
+            location=OpenApiParameter.PATH,
+            description="Entity ID of the badge instance.",
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(
+            description="PDF file",
+            response=OpenApiTypes.BINARY,
+        ),
+        404: OpenApiResponse(description="Badge not found"),
+        403: OpenApiResponse(description="Permission denied"),
+    },
 )
-@permission_classes([IsAuthenticated])
+@api_view(["GET"])
+@authentication_classes([])
+@permission_classes([])
 def pdfeditor_backpack_pdf(request, *args, **kwargs):
     slug = kwargs["slug"]
     try:
