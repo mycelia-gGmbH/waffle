@@ -12,13 +12,15 @@ from drf_spectacular.utils import (
     OpenApiParameter,
 )
 from drf_spectacular.types import OpenApiTypes
+from celery import shared_task
+from django.contrib.auth import get_user_model
 from entity.api import (
     BaseEntityDetailView,
     BaseEntityListView,
     UncachedPaginatedViewMixin,
     VersionedObjectMixin,
 )
-from issuer.models import Issuer
+from issuer.models import Issuer, BadgeClass
 from issuer.permissions import (
     BadgrOAuthTokenHasEntityScope,
     BadgrOAuthTokenHasScope,
@@ -32,7 +34,7 @@ from .permissions import (
     MayIssuePDFTemplate,
     is_pdftemplate_editor,
 )
-from .serializers_v1 import PDFTemplateSerializerV1
+from .serializers_v1 import PDFTemplateSerializerV1, PDFEditorBadgeInstanceSerializerV1
 from .models import PDFTemplate, PDFEditorIframeUrl
 
 class IssuerPDFTemplateList(
@@ -173,3 +175,79 @@ class PDFTemplateEmbed(RequestIframe):
         )
 
         return JsonResponse({"url": iframe.url})
+
+
+def pdfeditor_process_batch_assertions(
+    self,
+    assertions,
+    user_id,
+    badgeclass_id,
+    issuerSlug,
+    create_notification=False,
+):
+    try:
+        User = get_user_model()
+        user = User.objects.get(id=user_id)
+        badgeclass = BadgeClass.objects.get(id=badgeclass_id)
+
+        total = len(assertions)
+
+        processed = 0
+        successful = []
+        errors = []
+
+        for assertion in assertions:
+            request_entity_id = assertion.get("request_entity_id")
+            assertion["create_notification"] = create_notification
+
+            serializer = PDFEditorBadgeInstanceSerializerV1(
+                data=assertion,
+                context={
+                    "badgeclass": badgeclass,
+                    "user": user,
+                    "issuerSlug": issuerSlug,
+                },
+            )
+
+            if serializer.is_valid():
+                try:
+                    instance = serializer.save(created_by=user)
+                    successful.append(
+                        {
+                            "badge_instance": PDFEditorBadgeInstanceSerializerV1(instance).data,
+                            "request_entity_id": request_entity_id,
+                        }
+                    )
+                except Exception as e:
+                    errors.append({"assertion": assertion, "error": str(e)})
+            else:
+                errors.append({"assertion": assertion, "error": serializer.errors})
+
+            processed += 1
+
+            # Emit progress after each iteration
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "processed": processed,
+                    "total": total,
+                    "data": successful,
+                    "errors": errors,
+                },
+            )
+
+        return {
+            "success": len(errors) == 0,
+            "status": status.HTTP_201_CREATED
+            if len(errors) == 0
+            else status.HTTP_207_MULTI_STATUS,
+            "data": successful,
+            "errors": errors,
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "error": str(e),
+        }

@@ -19,12 +19,16 @@ class PDFEditorConfig(AppConfig):
             BatchAssertionsIssue,
             BadgeInstanceDetail,
             BadgeInstanceList,
+            BadgeInstancesBatchAssertionTask,
         )
         from .serializers_v1 import PDFEditorBadgeInstanceSerializerV1
+        from .api import pdfeditor_process_batch_assertions
 
         BatchAssertionsIssue.v1_serializer_class = PDFEditorBadgeInstanceSerializerV1
         BadgeInstanceDetail.v1_serializer_class = PDFEditorBadgeInstanceSerializerV1
         BadgeInstanceList.v1_serializer_class = PDFEditorBadgeInstanceSerializerV1
+        BadgeInstancesBatchAssertionTask.process_batch_assertions = pdfeditor_process_batch_assertions
+
 
         # override original use of QrCodeSerializerV1
         from issuer.api import QRCodeDetail, QRCodeList
