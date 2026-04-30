@@ -36,7 +36,6 @@ from mainsite.badge_pdf import (
     PageNumCanvas,
     BadgePDFCreator,
 )
-from django.utils.translation import activate as activate_language
 
 
 TEXT_COLOR = "#323232"
@@ -988,7 +987,6 @@ class TemplateBadgePDFCreator(BadgePDFCreator):
             canvas.restoreState()
 
     def generate_pdf(self):
-        activate_language(self.badgeclass.language)
         buffer = BytesIO()
 
         doc = BaseDocTemplate(
