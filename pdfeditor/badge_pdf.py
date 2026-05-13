@@ -35,6 +35,7 @@ from mainsite.badge_pdf import (
     RoundedRectFlowable,
     PageNumCanvas,
     BadgePDFCreator,
+    get_leaf_badges,
 )
 
 
@@ -926,7 +927,7 @@ class TemplateBadgePDFCreator(BadgePDFCreator):
 
     def get_learningpath_badges(self):
         lp = LearningPath.objects.filter(participationBadge=self.badge_class).first()
-        lp_badges = [badge.badge for badge in lp.learningpath_badges]
+        lp_badges = get_leaf_badges(lp)
         badgeuser = BadgeUser.objects.get(email=self.badge_instance.recipient_identifier)
         badge_ids = (
             BadgeInstance.objects.filter(
